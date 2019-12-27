@@ -38,8 +38,8 @@ def help(update, context):
         "- /cancel: Interrompe il comando attualmente in esecuzione\n"\
         "- /login: Effettua il Login sul portale SOL chiedendo le credenziali\n"\
         "- /logout: Cancella ogni dato personale raccolto dal Bot, compresa la sessione corrente ed effettuando quindi il Logout dal portale\n"\
-        "- /yourExams: Visualizza gli esami a cui sei iscritto\n"\
-        "- /viewExams: Visualizza gli esami disponibili e ti permette eventualmente di iscriverti\n"
+        "- /booked: Visualizza gli esami a cui sei iscritto\n"\
+        "- /exams: Visualizza gli esami disponibili e ti permette eventualmente di iscriverti\n"
 
 	update.message.reply_markdown(help_msg)
 
@@ -106,41 +106,50 @@ def view_exams(update, context):
         update.message.reply_markdown(response, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
     # Inizializza Inline Keyboard
-    keyboard = [[ InlineKeyboardButton("Visualizza", callback_data='0'),
-         InlineKeyboardButton("Iscriviti", callback_data='1') ]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
+    keyboard = [[ "Visualizza", "Iscriviti" ]]
     view_msg = "Vuoi solo visualizzare gli appelli disponibili o vuoi anche iscriverti?\n"#\
         #"_Puoi interrompere qualunque comando in esecuzione con il comando /cancel_\n"
-    update.message.reply_text(view_msg, reply_markup=reply_markup)
+    update.message.reply_text(view_msg, reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True))
     return 1
 
 def view_exams_handler(update, context):
-    # Esegue la funzione di sol_framework
-    exams = sol.getExams(context.user_data)
-    update.message.reply_markdown('Ecco gli appelli disponibili:\n\n%s' %exams, reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
+    answer = update.message.text
+    if answer == 'Iscriviti':
+        return 2
+    else:
+        exams, linksDict = sol.getExams(context.user_data)
+        update.message.reply_markdown('Ecco gli appelli disponbili:\n\n%s' %exams, reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
 
-def enroll_exams_handler(update, context):
+def enroll_exams_handler_1(update, context):
+    print('step 1')
+    update.message.reply_markup(ReplyKeyboardRemove())
+    print('step 1')
     # Esegue la funzione di sol_framework
-    exams, links_list = sol.getExams(context.user_data)
-    update.message.reply_markdown('Ecco gli appelli disponibili:\n'\
-        'Quelli a cui puoi iscriverti sono segnati con %s, quelli a cui non puoi con %s \n\n%s\n' %type_to_sym['Prenotazione'] %type_to_sym['Vietato'] %exams, reply_markup=ReplyKeyboardRemove())
-    update.message.reply_markdown('Gli appelli disponibili sono segnati con un numero.\n'\
-        'Inserisci il numero dell\'appello a cui vuoi iscriverti, senza spazi, o inserisci 0 se vuoi annullare l\'iscrizione\n')
-    answer = int(update.message.text)
-    if answer in range(len(links_list)+1):
-        if answer == 0:
-            return ConversationHandler.END
-        else:
-            answer -= 1
-            res = sol.enrollToExam(context.user_data, links_list[answer])
-            if res == 'OK':
-                update.message.reply_markdown('\n*Prenotazione effettuata con successo*\n')
-                return ConversationHandler.END
-            else:
-                update.message.reply_markdown(res, reply_markup=ReplyKeyboardRemove())
-                ConversationHandler.END
+    exams, linksDict = sol.getExams(context.user_data)
+    print('step 2')
+    # Inizializza la tastiera per la selezione degli appelli
+    keyboard = [['%s' %i] for i in linksDict.keys()]
+    print(keyboard)
+    print('step3')
+    text = 'Ecco gli appelli disponibili:\n'\
+        'Quelli a cui puoi iscriverti sono segnati con %s, quelli a cui non puoi con %s \n\n%s\n'\
+        'Gli appelli disponibili sono segnati con un numero.\n'\
+        'Seleziona il numero dell\'appello a cui vuoi iscriverti \n' %(type_to_sym['Prenotazione'], type_to_sym['Vietato'], exams)
+    update.message.reply_markdown(text, reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True))
+    return 3
+
+def enroll_exams_handler_2(update, context):
+    exam_id = update.message.text
+    # Effettua l'iscrizione all'esame
+    exams, linksDict = sol.getExams(context.user_data)
+    result = sol.enrollToExam(context.user_data, linksDict[exam_id])
+    if result != "OK":
+        update.message.reply_markdown(result, reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
+    else:
+        update.message.reply_markdown('Prenotazione effettuata con successo', reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
 
 def logout(update, context):
     # Delete all
@@ -179,11 +188,14 @@ def main():
         fallbacks=[CommandHandler('cancel', cancel)])
 
     cmd_view_exams= ConversationHandler(
-        entry_points=[CommandHandler('viewExams', view_exams)],
+        entry_points=[CommandHandler('exams', view_exams)],
 
         states={
-            1: [CallbackQueryHandler(view_exams_handler, pattern='^0$'),
-                CallbackQueryHandler(enroll_exams_handler, pattern='^1$')]
+            1: [MessageHandler(Filters.text, view_exams_handler)],
+
+            2: [MessageHandler(Filters.text, enroll_exams_handler_1)],
+
+            3: [MessageHandler(Filters.text, enroll_exams_handler_2)]
         },
 
         fallbacks=[CommandHandler('cancel', cancel)])
@@ -192,7 +204,7 @@ def main():
     dp.add_handler(CommandHandler('help', help))
     dp.add_handler(CommandHandler('logout', logout))
     dp.add_handler(CommandHandler('cancel', cancel))
-    dp.add_handler(CommandHandler('yourExams', view_enrolled_exams))
+    dp.add_handler(CommandHandler('booked', view_enrolled_exams))
     dp.add_handler(cmd_login)
     dp.add_handler(cmd_view_exams)
 

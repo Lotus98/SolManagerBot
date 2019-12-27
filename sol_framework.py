@@ -66,13 +66,13 @@ def getExams(user_data):
     exams = [exams[6*i:6*(i+1)]  for i in range(int(len(exams)/6))]
 
     result=''
-    linksList=[]
+    linksDict={}
     count=0
     for i in exams:
         if(i[0].div):
             count+=1
-            linksList.append(i[0].div.a['href'])
-            result+=str(count)+' '+type_to_sym['Prenotazione']
+            linksDict[str(count)] = i[0].div.a['href']
+            result+='ID: '+str(count)+' '+type_to_sym['Prenotazione']
         else:
             result+=type_to_sym['Vietato']
         for j in range(1,5):
@@ -82,7 +82,7 @@ def getExams(user_data):
             result+=('', '\nDescrizione: '+ i[j].get_text())[j==4]
         result+='\n\n'
 
-    return result, linksList
+    return result, linksDict
 
 def enrollToExam(user_data, link):
     # Funzione per realizzare la registrazione ad un appello
@@ -98,3 +98,5 @@ def enrollToExam(user_data, link):
         return 'OK'
     else:
         return 'ERROR - La prenotazione *non* è stata effettuata con successo, riprova più tardi'
+
+#def unbookExam(user_data, link):
