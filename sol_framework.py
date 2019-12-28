@@ -34,27 +34,30 @@ def getEnrolledExams(user_data):
     # Gets the hmtl page with the data
     response = user_data['session'].get(ENROLLED_EXAMS_URL)
     soup = BeautifulSoup(response.text, features='lxml')
-    booked = soup.body.find_all('table', class_='detail_table')
+    booked = soup.body('table', class_='detail_table')
 
     # Parsing data, creating a list with final output
     out = []
-    for i in range(len(booked)):
-        temp=[]
-        for j in booked[i].get_text().split('\n'):
+    count = 0
+    for i in booked:
+        count += 1
+        temp=['ID: %s ' %str(count)]
+        for j in i.get_text().split('\n'):
             if j!='':
                 temp.append(j+'\n')
-        out.extend((temp[0], temp[-1]))
-
+        out.extend((temp[0], temp[1], temp[-1]))
+    cnt = 1
     for i in range(len(out)):
-        if i%2:
+        if cnt == 3 :
             out[i]='Data: ' + ' '.join([out[i][:10], 'Ora:', out[i][10:15]]) + '\n\n'
-        else:
+            cnt = 0
+        elif cnt == 2 :
             out[i]=type_to_sym['Prenotazione']+out[i]
-
+        cnt += 1
     result = ''
     for i in out:
         result += i
-    return result
+    return result, count
 
 def getExams(user_data):
     # Gets the hmtl page with the data
@@ -88,15 +91,51 @@ def enrollToExam(user_data, link):
     # Funzione per realizzare la registrazione ad un appello
     response = user_data['session'].get(BASE_URL+link)
     soup = BeautifulSoup(response.text, features='lxml')
-    params = soup.body.form('input')
+    # Recupera il link al quale effettuare la richiesta POST
     en_link = soup.body.form['action']
+    # Crea il payload da passare per la richiesta POST
+    params = soup.body.form('input')
     payload = {i['name']:i['value'] for i in params}
+    # Effettua l'iscrizione all'appello
     enroll = user_data['session'].post(BASE_URL+en_link, data=payload)
-    soup2 = BeautifulSoup(enroll.text)
+    # Verifica se l'operazione è andata a buon fine --> DA RICONTROLLARE
+    soup2 = BeautifulSoup(enroll.text, features='lxml')
     res = soup2.body('p', class_="app-text_esito_pren_msg-esito_pren")
-    if res == 'PRENOTAZIONE EFFETTUATA\n':
+    if res[0].get_text() == 'PRENOTAZIONE EFFETTUATA\n':
         return 'OK'
     else:
-        return 'ERROR - La prenotazione *non* è stata effettuata con successo, riprova più tardi'
+        return 'ERROR - La prenotazione *non* è stata effettuata con successo. Riprova più tardi'
 
-#def unbookExam(user_data, link):
+def unbookExam(user_data):
+    # Gets the hmtl page with the data
+    response = user_data['session'].get(ENROLLED_EXAMS_URL)
+    soup = BeautifulSoup(response.text, features='lxml')
+    booked = soup.body('table', class_='detail_table')
+
+    choice = user_data['choice']
+    # Collects link and payload to forge the POST request
+    linksDict={}
+    count = 0
+    for i in booked:
+        count += 1
+        tmp = i('td', attrs={'title':'cancella la prenotazione'})
+        if tmp != []:
+            linksDict[str(count)] = { 'link':tmp[0].form['action'], 'payload':{i['name']:i['value'] for i in tmp[0]('input', attrs={'type':'hidden'})} }
+        else:
+            linksDict[str(count)] = ''
+    if linksDict[choice]== '':
+        return 'Non è possibile rimuovere questa prenotazione'
+    unbook = user_data['session'].post(BASE_URL+linksDict[choice]['link'], data=linksDict[choice]['payload'])
+    soup2 = BeautifulSoup(unbook.text, features='lxml')
+
+    link = soup2.table.form['action']
+    payload = {}
+    for i in soup2.table.form.table('input'):
+        if i['name'] != '':
+            payload.update({i['name']:i['value']})
+
+    if user_data['session'].post(BASE_URL+link, data=payload).url != ENROLLED_EXAMS_URL :
+        return 'L\'operazione non è andata a buon fine. Riprova più tardi'
+    req = user_data['session'].post(BASE_URL+link, data=payload)
+
+    return 'OK'
