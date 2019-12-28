@@ -17,7 +17,7 @@ Attualmente sono disponbili le seguenti funzionalità:
 
 Il bot viene rilasciato con licenza MIT. Per cui chiunque può contribuire alle modifiche e nuove implementazioni, tramite Github.
 
-Per utilizzare correttamente la repository, dopo averla clonata, esguire i seguenti comandi per installare le librerie di python necessarie:
+Per utilizzare correttamente la repository, dopo averla clonata, eseguire i seguenti comandi per installare le dipendenze di python necessarie:
 ```bash
 sudo pip3 install python-telegram-bot
 sudo pip3 install bs4
