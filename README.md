@@ -1,4 +1,4 @@
-#Sol Manager Bot
+# Sol Manager Bot
 
 [![forthebadge](http://forthebadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 
