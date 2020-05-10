@@ -26,7 +26,7 @@ sudo pip3 install bs4
 ```
 
 Dopodiché sarà necessario rinominare il file:
-* ``settins_git.py`` in ``settings.py``
+* ``settings_git.py`` in ``settings.py``
 
 Infine sarà necessario modificare il file ``settings.py`` inserendo il token del proprio bot nella variabile ``TOKEN``
 
