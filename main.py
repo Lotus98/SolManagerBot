@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 pp = PicklePersistence(filename='u_data.pickle', on_flush=True)
 
 def start(update, context):
-	start_msg = "*Benvenuto a* @Sol\_pg\_Bot.\n"\
+	start_msg = "*Benvenuto a* @UnipgSolBot.\n"\
 		"Questo bot ti permetterà di visualizzare gli appelli disponibili e quelli a cui ti sei già iscritto sulla piattaforma SOL Unipg.\n"\
         "Ti permetterà inoltre di iscriverti a nuovi appelli se disponibili\n\n"\
         "Per visualizzare i comandi disponibili utilizza /help\n\n"\
@@ -79,7 +79,7 @@ def login_handler(update, context):
 
 	# Getting Name and Surname of the user just to show that login was performed correctly
 	main_page = context.user_data['session'].get(MAIN_URL)
-	soup= BeautifulSoup(main_page.text, features='lxml')
+	soup = BeautifulSoup(main_page.text, features='lxml')
 	name = soup.body.find('div', attrs={'class':'masthead_usermenu_user_name'}).text
 	update.message.reply_markdown("Sono riuscito a collegarmi, benvenuto *%s*!" % name)
 
@@ -97,7 +97,7 @@ def view_enrolled_exams(update, context):
 
     # Prende una stringa e una lista utilizzando una funzione di sol_framework
     booked, id = sol.getEnrolledExams(context.user_data)
-    update.message.reply_markdown('Ecco gli appelli a cui sei iscritto:\n\n%s' %booked)
+    update.message.reply_markdown('Ecco gli appelli a cui sei iscritto:\n\n%s' %sol.escape(booked))
 
     # Crea la tastiera per l'utente
     keyboard = [['No']]
@@ -146,12 +146,12 @@ def choice_handler(update, context):
         text = 'Ecco gli appelli disponibili:\n'\
             'Quelli a cui puoi iscriverti sono segnati con %s, quelli a cui non puoi con %s \n\n%s\n'\
             'Gli appelli disponibili sono segnati con un numero.\n'\
-            'Seleziona il numero dell\'appello a cui vuoi iscriverti \n' %(type_to_sym['Prenotazione'], type_to_sym['Vietato'], exams)
+            'Seleziona il numero dell\'appello a cui vuoi iscriverti \n' %(type_to_sym['Prenotazione'], type_to_sym['Vietato'], sol.escape(exams))
         update.message.reply_markdown(text, reply_markup=ReplyKeyboardMarkup(keyboard))
         return 2
     else:
         exams, linksDict = sol.getExams(context.user_data)
-        update.message.reply_markdown('Ecco gli appelli disponbili:\n\n%s' %exams, reply_markup=ReplyKeyboardRemove())
+        update.message.reply_markdown(f'Ecco gli appelli disponbili:\n\n{sol.escape(exams)}', reply_markup=ReplyKeyboardRemove())
 
         return ConversationHandler.END
 

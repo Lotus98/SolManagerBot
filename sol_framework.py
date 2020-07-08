@@ -5,6 +5,11 @@ import requests
 from bs4 import BeautifulSoup
 from settings import *
 
+def escape(s):
+    s = s.replace('_','\_')
+    s = s.replace('*','\*')
+    return s
+
 def connect(user_data):
     if 'session' not in user_data:
         user_data['session'] = requests.Session()
@@ -84,7 +89,6 @@ def getExams(user_data):
             result+=('', 'Iscrizioni dal: '+i[j].get_text()[0:10]+' al: '+i[j].get_text()[10:20])[j==3]
             result+=('', '\nDescrizione: '+ i[j].get_text())[j==4]
         result+='\n\n'
-
     return result, linksDict
 
 def enrollToExam(user_data, link):
