@@ -21,8 +21,7 @@ Il bot viene rilasciato con licenza MIT. Per cui chiunque può contribuire alle 
 
 Per utilizzare correttamente la repository, dopo averla clonata, eseguire i seguenti comandi per installare le dipendenze di python necessarie:
 ```bash
-sudo pip3 install python-telegram-bot
-sudo pip3 install bs4
+python3 -m pip install --upgrade bs4 python-telegram-bot lxml
 ```
 
 Dopodiché sarà necessario rinominare il file:
